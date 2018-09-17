@@ -354,16 +354,12 @@
         <p>本文记录以下几点：</p>
 <ul>
 <li>TLS/SSL 是什么，他们的区别是什么</li>
-<li>TLS 握手协议<ul>
-<li>单向握手协议</li>
-<li>双向握手协议</li>
-</ul>
-</li>
-<li>用openssl 生成证书链</li>
-<li>服务端/客户端如何使用证书链</li>
+<li>TLS 握手协议 - handshake protocol</li>
+<li>TLS 如何提供认证、授权、保密以及完整性</li>
+<li>实例：用openssl 生成证书链, client/server 如何使用证书链</li>
 </ul>
 <a id="more"></a>
-<h1 id="一、TLS-SSL-概念"><a href="#一、TLS-SSL-概念" class="headerlink" title="一、TLS/SSL 概念"></a>一、TLS/SSL 概念</h1><img src="/2018/08/30/TLSCredentials/tcp-ip_model_ssl-tls_protocol.png" title="tls-ssl protocol">
+<h1 id="TLS-SSL-概念"><a href="#TLS-SSL-概念" class="headerlink" title="TLS/SSL 概念"></a>TLS/SSL 概念</h1><img src="/2018/08/30/TLSCredentials/tcp-ip_model_ssl-tls_protocol.png" title="tls-ssl protocol">
 <ul>
 <li><p>首先引用一段 <a href="https://www.howsmyssl.com" target="_blank" rel="noopener">https://www.howsmyssl.com</a> 上关行TLS与SSL对比说明</p>
 <blockquote>
@@ -383,8 +379,84 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">F12 --&gt; security tab</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
-<h1 id="二、TLS-SSL握手协议"><a href="#二、TLS-SSL握手协议" class="headerlink" title="二、TLS/SSL握手协议"></a>二、TLS/SSL握手协议</h1><p>TLS的主要目标是使SSL更安全，并使协议的规范更精确和完善， TLS 与 SSL 在握手协议流程上基本相同。</p>
-<h2 id="单向握手协议"><a href="#单向握手协议" class="headerlink" title="单向握手协议"></a>单向握手协议</h2><h2 id="双向握手协议"><a href="#双向握手协议" class="headerlink" title="双向握手协议"></a>双向握手协议</h2>
+<h1 id="TLS-SSL握手协议"><a href="#TLS-SSL握手协议" class="headerlink" title="TLS/SSL握手协议"></a>TLS/SSL握手协议</h1><p>TLS的主要目标是使SSL更安全，并使协议的规范更精确和完善， TLS 与 SSL 在握手协议流程上基本相同。<br>TLS handshake 使得客户端和服务器能够建立以secrect keys加密的通信通道。<br>TLS handshake的目的：</p>
+<ul>
+<li>协商客户端、服务器使用的TLS版本号</li>
+<li>协商使用的加解密算法</li>
+<li>通过exchanging and velidating数字签名进行认证</li>
+<li>使用非对称加密算法生成握手完成后使用的对称加解密密钥， 以解决密钥分发的问题</li>
+</ul>
+<h2 id="TLS-handshake-主要流程："><a href="#TLS-handshake-主要流程：" class="headerlink" title="TLS handshake 主要流程："></a>TLS handshake 主要流程：</h2><ol>
+<li>TCP三握手完成之后, client发送”client hello” message到server, “client hello” message包含加解密相关的信息， 比如：TLS版本；client支持的加密算法，按优先级排序；client成的随机数random1, 用于后续的计算；client支持的压缩方式</li>
+<li>server收到client的”client hello”message后，回复”server hello” message, “server “hello” message 包含server根据client上送的client算法支持列表选择的加密算法； server端生成的random2； session ID；server自己的digital certificate。 如果server需要认证client（可选），那么server会发送 “client certificate request”消息， “client certificate request” message包含server自身支持的证书类型，以及信任的CA机构Certification Authorities(CAs)。</li>
+<li>client校验server的ditital certificate, 详见第三节.</li>
+<li>client发送由server的public key加密的第三个随机数random3，client和server使用random1+random2+random3这三个随机数各自计算对称加密的密钥.</li>
+<li>如果server在第2步，发送了”client certificate request”，触发了双向认证, client发送用client自己的private key加密由client生成的一个随机数, 以及client的digital certificate或者”no digital certificate alert”。这个alert仅仅是一个warning, 但是有些握手协议的实现如果要求必须使用双向认证，则会把它当作握手失败处理。</li>
+<li>server检验客户端的digital certificate，详见第三节.</li>
+<li>client 发送使用对称密钥加密的”finished” message， 表明client端的握手完成</li>
+<li>server 发送用对称密钥加密的”finished” message, 表明server端握手完成, TLS session建立</li>
+<li>在TLS session期间，client 和 server之前的消息使用对称密钥加解密</li>
+</ol>
+<img src="/2018/08/30/TLSCredentials/tls-one-way-handshake.gif" title="Figure 1 illustrates the SSL or TLS handshake">
+<h1 id="TLS-如何提供认证、授权、保密以及完整性"><a href="#TLS-如何提供认证、授权、保密以及完整性" class="headerlink" title="TLS 如何提供认证、授权、保密以及完整性"></a>TLS 如何提供认证、授权、保密以及完整性</h1><p>在客户端和服务器身份验证期间，有一个步骤要求用非对称密钥对中的一个密钥对数据进行加密，并使用这对密钥的另一个密钥进行解密。消息摘要用于提供完整性。</p>
+<h2 id="TLS如何提供认证"><a href="#TLS如何提供认证" class="headerlink" title="TLS如何提供认证"></a>TLS如何提供认证</h2><ol>
+<li>对于服务器身份验证，客户端使用服务器的公钥加密用于计算密钥的数据。只有当服务器能够用正确的私钥解密数据时，服务器才能生成密钥。</li>
+<li>对于客户端身份验证，服务器使用客户端证书中的公钥来解密客户端在握手过程中发送的数据。用秘钥加密的已完成消息（步骤7和8）确认身份验证已经完成。</li>
+<li>如果任何身份验证步骤失败，握手失败，会话终止。</li>
+</ol>
+<h3 id="涉及到的证书"><a href="#涉及到的证书" class="headerlink" title="涉及到的证书"></a>涉及到的证书</h3><p>在TLS握手期间交换数字证书是身份验证过程的一部分。证书交换期间，假设：CA X将证书颁发给TLS客户端，CA Y将证书颁发给TLS服务器</p>
+<ol>
+<li>单向认证 - handshake第2步时server未向客户端发送”client certificate request”</li>
+</ol>
+<ul>
+<li>TLS server:<ul>
+<li>由CA Y签发的server证书(server certificate)</li>
+<li>server的private key</li>
+</ul>
+</li>
+<li>TLS client:<ul>
+<li>CA Y的证书</li>
+</ul>
+</li>
+</ul>
+<ol start="2">
+<li>双向认证 - handshake第2步时server向客户端发送”cleint certificate request”请求验证client certificate</li>
+</ol>
+<ul>
+<li>TLS server:<ul>
+<li>由CA Y签发的server证书(server certificate)</li>
+<li>server的private key</li>
+<li>CA X的证书</li>
+</ul>
+</li>
+<li>TLS client:<ul>
+<li>由 CA X签发的client证书(client certificate)</li>
+<li>client的private key</li>
+<li>CA Y的证书</li>
+</ul>
+</li>
+</ul>
+<h2 id="证书检验流程"><a href="#证书检验流程" class="headerlink" title="证书检验流程"></a>证书检验流程</h2><p>在handshake第3步和第6步, TLS client校验服务证书 和 TLS server校验客户端的证书时涉及到以下几个方面</p>
+<ol>
+<li>校验数字签名 - digital signature(see <a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/sy10520_.htm?view=kc" target="_blank" rel="noopener">Digital signatures in SSL and TLS</a>)</li>
+<li>证书链校验(see <a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/sy10600_.htm?view=kc" target="_blank" rel="noopener">How certificate chains work</a>)</li>
+<li>证书有效期校验</li>
+<li>证书是否被吊销(see <a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/sy12670_.htm?view=kc" target="_blank" rel="noopener">Working with revoked certificates</a>)</li>
+</ol>
+<h2 id="密钥重置"><a href="#密钥重置" class="headerlink" title="密钥重置"></a>密钥重置</h2><p>在TLS握手期间，会生成一个秘钥，以便在TLS client和server之间加密数据。这个秘密密钥被用于一个对称加密算法中，该对称加密算法，将明文转换为不可读的密文，并将密文转换为明文。密钥是由handshake阶段生成的random1+random2+random3能过算法生成的，用于将明文加密为密文。密匙也用于MAC（消息身份验证码）算法，用于确定消息是否被更改。更多信息，请参见<a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/sy10510_.htm?view=kc" target="_blank" rel="noopener">消息摘要和数字签名</a>。如果密钥被截取，则可以从密文中对消息的明文进行解密，或者可以计算消息摘要，从而允许在不检测消息的情况下对消息进行修改。即使对于一个复杂的算法，也可以通过将所有可能的数学转换应用到密文中，最终可以发现明文。为了将可以被破译或修改的数据的数量减少到最小，如果密钥被破坏，密钥可以定期重新协商。当秘密密钥被重新协商时，以前的密钥不能再用于解密用新密钥加密的数据。</p>
+<h2 id="TLS如何提供保密性"><a href="#TLS如何提供保密性" class="headerlink" title="TLS如何提供保密性"></a>TLS如何提供保密性</h2><p>TLS使用对称和非对称加密的组合来确保消息的私密性。在TLS握手期间，TLS client和server协商得到一种加密算法和一个对称密钥，只用于一个会话。在TLS client和server之间传输的所有消息都使用该算法和密钥进行加密，以确保消息在被拦截时仍然是私有的。SSL支持广泛的加密算法。因为SSL和TLS在传输对称密钥时使用非对称加密，所以没有关键的分发问题。有关加密技术的更多信息，请参阅<a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/sy10500_.htm?view=kc" target="_blank" rel="noopener">密码学</a>。</p>
+<h2 id="TLS如何提供完整性"><a href="#TLS如何提供完整性" class="headerlink" title="TLS如何提供完整性"></a>TLS如何提供完整性</h2><blockquote>
+<p>SSL and TLS provide data integrity by calculating a message digest. For more information, see Data integrity of messages.</p>
+</blockquote>
+<blockquote>
+<p>Use of SSL or TLS does ensure data integrity, provided that the CipherSpec in your channel definition uses a hash algorithm as described in the table in Specifying CipherSpecs.</p>
+</blockquote>
+<blockquote>
+<p>In particular, if data integrity is a concern, you should avoid choosing a CipherSpec whose hash algorithm is listed as “None”. Use of MD5 is also strongly discouraged as this is now very old and no longer secure for most practical purposes.</p>
+</blockquote>
+<h1 id="实例：用openssl-生成证书链-client-server-如何使用证书链"><a href="#实例：用openssl-生成证书链-client-server-如何使用证书链" class="headerlink" title="实例：用openssl 生成证书链, client/server 如何使用证书链"></a>实例：用openssl 生成证书链, client/server 如何使用证书链</h1><p><a href="https://github.com/maxnilz/tls-credentials/blob/master/README.md" target="_blank" rel="noopener">用openssl 生成证书链, client/server 如何使用证书链</a></p>
+<p><a href="https://github.com/maxnilz/tls-credentials" target="_blank" rel="noopener">demo</a></p>
+
       
     </div>
     
@@ -576,7 +648,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一、TLS-SSL-概念"><span class="nav-number">1.</span> <span class="nav-text">一、TLS/SSL 概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#二、TLS-SSL握手协议"><span class="nav-number">2.</span> <span class="nav-text">二、TLS/SSL握手协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#单向握手协议"><span class="nav-number">2.1.</span> <span class="nav-text">单向握手协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#双向握手协议"><span class="nav-number">2.2.</span> <span class="nav-text">双向握手协议</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL-概念"><span class="nav-number">1.</span> <span class="nav-text">TLS/SSL 概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL握手协议"><span class="nav-number">2.</span> <span class="nav-text">TLS/SSL握手协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS-handshake-主要流程："><span class="nav-number">2.1.</span> <span class="nav-text">TLS handshake 主要流程：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-如何提供认证、授权、保密以及完整性"><span class="nav-number">3.</span> <span class="nav-text">TLS 如何提供认证、授权、保密以及完整性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供认证"><span class="nav-number">3.1.</span> <span class="nav-text">TLS如何提供认证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#涉及到的证书"><span class="nav-number">3.1.1.</span> <span class="nav-text">涉及到的证书</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#证书检验流程"><span class="nav-number">3.2.</span> <span class="nav-text">证书检验流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#密钥重置"><span class="nav-number">3.3.</span> <span class="nav-text">密钥重置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供保密性"><span class="nav-number">3.4.</span> <span class="nav-text">TLS如何提供保密性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供完整性"><span class="nav-number">3.5.</span> <span class="nav-text">TLS如何提供完整性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实例：用openssl-生成证书链-client-server-如何使用证书链"><span class="nav-number">4.</span> <span class="nav-text">实例：用openssl 生成证书链, client/server 如何使用证书链</span></a></li></ol></div>
             
 
           </div>
