@@ -79,17 +79,14 @@
 
 
 
-<meta name="description" content="Focus on the development of high-performance high- availability sever/back-endGitHub：https://github.com/maxnilzSever/back-end engineer · target energy solutions ltd.Male ︳ 27 ︳Bachelor degree ︳ 5 year">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Resume-Xianchao.yu">
-<meta property="og:url" content="https://maxnilz.github.io/about/index.html">
+<meta property="og:title" content="categories">
+<meta property="og:url" content="https://maxnilz.github.io/categories/index.html">
 <meta property="og:site_name" content="maxnilz">
-<meta property="og:description" content="Focus on the development of high-performance high- availability sever/back-endGitHub：https://github.com/maxnilzSever/back-end engineer · target energy solutions ltd.Male ︳ 27 ︳Bachelor degree ︳ 5 year">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-08-30T09:41:58.499Z">
+<meta property="og:updated_time" content="2018-08-30T09:36:10.150Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Resume-Xianchao.yu">
-<meta name="twitter:description" content="Focus on the development of high-performance high- availability sever/back-endGitHub：https://github.com/maxnilzSever/back-end engineer · target energy solutions ltd.Male ︳ 27 ︳Bachelor degree ︳ 5 year">
+<meta name="twitter:title" content="categories">
 
 
 
@@ -121,7 +118,7 @@
 
 
 
-  <link rel="canonical" href="https://maxnilz.github.io/about/"/>
+  <link rel="canonical" href="https://maxnilz.github.io/categories/"/>
 
 
 
@@ -359,7 +356,7 @@
 <li>实例：用openssl 生成证书链, client/server 如何使用证书链</li>
 </ul>
 <a id="more"></a>
-<h1 id="TLS-SSL-概念"><a href="#TLS-SSL-概念" class="headerlink" title="TLS/SSL 概念"></a>TLS/SSL 概念</h1><img src="/2018/08/30/TLSCredentials/tcp-ip_model_ssl-tls_protocol.png" title="tls-ssl protocol">
+<h1 id="TLS-SSL-概念"><a href="#TLS-SSL-概念" class="headerlink" title="TLS/SSL 概念"></a>TLS/SSL 概念</h1><img src="/2018/08/30/TLSCredentials/tcp-ip_model_ssl-tls_protocol.png" title="Figure 1 tls-ssl protocol">
 <ul>
 <li><p>首先引用一段 <a href="https://www.howsmyssl.com" target="_blank" rel="noopener">https://www.howsmyssl.com</a> 上关行TLS与SSL对比说明</p>
 <blockquote>
@@ -386,7 +383,8 @@
 <li>通过exchanging and velidating数字签名进行认证</li>
 <li>使用非对称加密算法生成握手完成后使用的对称加解密密钥， 以解决密钥分发的问题</li>
 </ul>
-<h2 id="TLS-handshake-主要流程："><a href="#TLS-handshake-主要流程：" class="headerlink" title="TLS handshake 主要流程："></a>TLS handshake 主要流程：</h2><ol>
+<h2 id="TLS-handshake-主要流程"><a href="#TLS-handshake-主要流程" class="headerlink" title="TLS handshake 主要流程"></a>TLS handshake 主要流程</h2><img src="/2018/08/30/TLSCredentials/tls-one-way-handshake.gif" title="Figure 2 illustrates the SSL or TLS handshake">
+<ol>
 <li>TCP三握手完成之后, client发送”client hello” message到server, “client hello” message包含加解密相关的信息， 比如：TLS版本；client支持的加密算法，按优先级排序；client成的随机数random1, 用于后续的计算；client支持的压缩方式</li>
 <li>server收到client的”client hello”message后，回复”server hello” message, “server “hello” message 包含server根据client上送的client算法支持列表选择的加密算法； server端生成的random2； session ID；server自己的digital certificate。 如果server需要认证client（可选），那么server会发送 “client certificate request”消息， “client certificate request” message包含server自身支持的证书类型，以及信任的CA机构Certification Authorities(CAs)。</li>
 <li>client校验server的ditital certificate, 详见第三节.</li>
@@ -397,7 +395,6 @@
 <li>server 发送用对称密钥加密的”finished” message, 表明server端握手完成, TLS session建立</li>
 <li>在TLS session期间，client 和 server之前的消息使用对称密钥加解密</li>
 </ol>
-<img src="/2018/08/30/TLSCredentials/tls-one-way-handshake.gif" title="Figure 1 illustrates the SSL or TLS handshake">
 <h1 id="TLS-如何提供认证、授权、保密以及完整性"><a href="#TLS-如何提供认证、授权、保密以及完整性" class="headerlink" title="TLS 如何提供认证、授权、保密以及完整性"></a>TLS 如何提供认证、授权、保密以及完整性</h1><p>在客户端和服务器身份验证期间，有一个步骤要求用非对称密钥对中的一个密钥对数据进行加密，并使用这对密钥的另一个密钥进行解密。消息摘要用于提供完整性。</p>
 <h2 id="TLS如何提供认证"><a href="#TLS如何提供认证" class="headerlink" title="TLS如何提供认证"></a>TLS如何提供认证</h2><ol>
 <li>对于服务器身份验证，客户端使用服务器的公钥加密用于计算密钥的数据。只有当服务器能够用正确的私钥解密数据时，服务器才能生成密钥。</li>
@@ -405,9 +402,7 @@
 <li>如果任何身份验证步骤失败，握手失败，会话终止。</li>
 </ol>
 <h3 id="涉及到的证书"><a href="#涉及到的证书" class="headerlink" title="涉及到的证书"></a>涉及到的证书</h3><p>在TLS握手期间交换数字证书是身份验证过程的一部分。证书交换期间，假设：CA X将证书颁发给TLS客户端，CA Y将证书颁发给TLS服务器</p>
-<ol>
-<li>单向认证 - handshake第2步时server未向客户端发送”client certificate request”</li>
-</ol>
+<h4 id="单向认证"><a href="#单向认证" class="headerlink" title="单向认证"></a>单向认证</h4><p>handshake第2步时server未向客户端发送”client certificate request”</p>
 <ul>
 <li>TLS server:<ul>
 <li>由CA Y签发的server证书(server certificate)</li>
@@ -419,9 +414,7 @@
 </ul>
 </li>
 </ul>
-<ol start="2">
-<li>双向认证 - handshake第2步时server向客户端发送”cleint certificate request”请求验证client certificate</li>
-</ol>
+<h4 id="双向认证"><a href="#双向认证" class="headerlink" title="双向认证"></a>双向认证</h4><p>handshake第2步时server向客户端发送”cleint certificate request”请求验证client certificate</p>
 <ul>
 <li>TLS server:<ul>
 <li>由CA Y签发的server证书(server certificate)</li>
@@ -454,8 +447,10 @@
 <blockquote>
 <p>In particular, if data integrity is a concern, you should avoid choosing a CipherSpec whose hash algorithm is listed as “None”. Use of MD5 is also strongly discouraged as this is now very old and no longer secure for most practical purposes.</p>
 </blockquote>
-<h1 id="实例：用openssl-生成证书链-client-server-如何使用证书链"><a href="#实例：用openssl-生成证书链-client-server-如何使用证书链" class="headerlink" title="实例：用openssl 生成证书链, client/server 如何使用证书链"></a>实例：用openssl 生成证书链, client/server 如何使用证书链</h1><p><a href="https://github.com/maxnilz/tls-credentials/blob/master/README.md" target="_blank" rel="noopener">用openssl 生成证书链, client/server 如何使用证书链</a></p>
-<p><a href="https://github.com/maxnilz/tls-credentials" target="_blank" rel="noopener">demo</a></p>
+<h1 id="实例-用openssl-生成证书链-client-server-如何使用证书链"><a href="#实例-用openssl-生成证书链-client-server-如何使用证书链" class="headerlink" title="实例 - 用openssl 生成证书链, client/server 如何使用证书链"></a>实例 - 用openssl 生成证书链, client/server 如何使用证书链</h1><ul>
+<li><a href="https://github.com/maxnilz/tls-credentials/blob/master/README.md" target="_blank" rel="noopener">用openssl 生成证书链, client/server 如何使用证书链</a></li>
+<li><a href="https://github.com/maxnilz/tls-credentials" target="_blank" rel="noopener">demo</a></li>
+</ul>
 
       
     </div>
@@ -648,7 +643,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL-概念"><span class="nav-number">1.</span> <span class="nav-text">TLS/SSL 概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL握手协议"><span class="nav-number">2.</span> <span class="nav-text">TLS/SSL握手协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS-handshake-主要流程："><span class="nav-number">2.1.</span> <span class="nav-text">TLS handshake 主要流程：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-如何提供认证、授权、保密以及完整性"><span class="nav-number">3.</span> <span class="nav-text">TLS 如何提供认证、授权、保密以及完整性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供认证"><span class="nav-number">3.1.</span> <span class="nav-text">TLS如何提供认证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#涉及到的证书"><span class="nav-number">3.1.1.</span> <span class="nav-text">涉及到的证书</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#证书检验流程"><span class="nav-number">3.2.</span> <span class="nav-text">证书检验流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#密钥重置"><span class="nav-number">3.3.</span> <span class="nav-text">密钥重置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供保密性"><span class="nav-number">3.4.</span> <span class="nav-text">TLS如何提供保密性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供完整性"><span class="nav-number">3.5.</span> <span class="nav-text">TLS如何提供完整性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实例：用openssl-生成证书链-client-server-如何使用证书链"><span class="nav-number">4.</span> <span class="nav-text">实例：用openssl 生成证书链, client/server 如何使用证书链</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL-概念"><span class="nav-number">1.</span> <span class="nav-text">TLS/SSL 概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-SSL握手协议"><span class="nav-number">2.</span> <span class="nav-text">TLS/SSL握手协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS-handshake-主要流程"><span class="nav-number">2.1.</span> <span class="nav-text">TLS handshake 主要流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS-如何提供认证、授权、保密以及完整性"><span class="nav-number">3.</span> <span class="nav-text">TLS 如何提供认证、授权、保密以及完整性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供认证"><span class="nav-number">3.1.</span> <span class="nav-text">TLS如何提供认证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#涉及到的证书"><span class="nav-number">3.1.1.</span> <span class="nav-text">涉及到的证书</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#单向认证"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">单向认证</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#双向认证"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">双向认证</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#证书检验流程"><span class="nav-number">3.2.</span> <span class="nav-text">证书检验流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#密钥重置"><span class="nav-number">3.3.</span> <span class="nav-text">密钥重置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供保密性"><span class="nav-number">3.4.</span> <span class="nav-text">TLS如何提供保密性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TLS如何提供完整性"><span class="nav-number">3.5.</span> <span class="nav-text">TLS如何提供完整性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实例-用openssl-生成证书链-client-server-如何使用证书链"><span class="nav-number">4.</span> <span class="nav-text">实例 - 用openssl 生成证书链, client/server 如何使用证书链</span></a></li></ol></div>
             
 
           </div>
