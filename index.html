@@ -368,7 +368,7 @@
                 
               
 
-              <time title="创建时间：2019-05-13 07:31:43 / 修改时间：07:48:15" itemprop="dateCreated datePublished" datetime="2019-05-13T07:31:43+08:00">2019-05-13</time>
+              <time title="创建时间：2019-05-13 07:31:43 / 修改时间：08:29:47" itemprop="dateCreated datePublished" datetime="2019-05-13T07:31:43+08:00">2019-05-13</time>
             
 
             
@@ -409,7 +409,9 @@
         
           
             <p>C10K、C100K, C1000K=C1M,C10M( concurrent 10M connections)….千万级并发实现的秘密：内核不是解决方案，而是问题所在！</p>
-<ul>
+<h2 id="defination"><a href="#defination" class="headerlink" title="defination"></a>defination</h2><p>The C10k problem is the problem of optimising network sockets to handle a large number of clients at the same time.[1] The name C10k is a numeronym for concurrently handling ten thousand connections.[2] <em>Note that concurrent connections are not the same as requests per second, though they are similar: handling many requests per second requires high throughput (processing them quickly), while high number of concurrent connections requires efficient scheduling of connections</em>. <em>In other words, handling many requests per second is concerned with the speed of handling requests, whereas a system capable of handling a high number of concurrent connections does not necessarily have to be a fast system, only one where each request will deterministically return a response within a (not necessarily fixed) finite amount of time</em>.</p>
+<p>The problem of socket server optimisation has been studied because a number of factors must be considered to allow a web server to support many clients. This can involve a combination of operating system constraints and web server software limitations. According to the scope of services to be made available and the capabilities of the operating system as well as hardware considerations such as multi-processing capabilities, a multi-threading model or a single threading model can be preferred. Concurrently with this aspect, which involves considerations regarding memory management (usually operating system related), strategies implied relate to the very diverse aspects of the I/O management.[2]</p>
+<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
 <li>The C10K problem:  <a href="http://www.kegel.com/c10k.html" target="_blank" rel="noopener">http://www.kegel.com/c10k.html</a></li>
 <li>C1M: <a href="http://www.blogjava.net/yongboy/category/54842.html" target="_blank" rel="noopener">http://www.blogjava.net/yongboy/category/54842.html</a></li>
 <li>从C10K到C10M高性能网络的探索与实践: <a href="http://blog.qiniu.com/archives/4941" target="_blank" rel="noopener">http://blog.qiniu.com/archives/4941</a></li>
