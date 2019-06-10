@@ -323,7 +323,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/05/13/c10K-c100K/"/>
+    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/06/10/implementing-grpc-web-istio-envoy/"/>
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="maxnilz"/>
@@ -343,7 +343,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/2019/05/13/c10K-c100K/" class="post-title-link" itemprop="url">c10K-c100K-c10M</a>
+                <a href="/2019/06/10/implementing-grpc-web-istio-envoy/" class="post-title-link" itemprop="url">implementing-grpc-web-istio-envoy</a>
               
             
           </h1>
@@ -368,7 +368,157 @@
                 
               
 
-              <time title="创建时间：2019-05-13 07:31:43 / 修改时间：08:29:47" itemprop="dateCreated datePublished" datetime="2019-05-13T07:31:43+08:00">2019-05-13</time>
+              <time title="创建时间：2019-06-10 22:51:55 / 修改时间：22:58:10" itemprop="dateCreated datePublished" datetime="2019-06-10T22:51:55+08:00">2019-06-10</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>This is a post which was about how web applications can benefit from gRPC by leveraging a gRPC sub-project called gRPC-Web along with Istio.</p>
+<p>gRPC-Web addresses a shortcoming in the core gRPC framework: the fact that it doesn’t work so well with web applications running on browsers. That’s because even though most browsers support HTTP/2 and gRPC is based on HTTP/2, gRPC has its own protocols that web applications must understand in order to work properly with it. But web applications do not have this capability because browsers don’t support gRPC out of the box. Developers are increasingly looking to benefit from the advantages the core gRPC framework confers beyond backend microservices, thus gRPC-Web was born.</p>
+<p>One way to get around the above problem is to use the gRPC-Web plugin and run a proxy like Envoy along with it. Envoy serves as the default proxy for Istio, and by configuring its gRPC-Web filter, we can create seamless, well-connected, cloud native web applications. Traditionally, services have exposed their functionality over REST APIs. This gives you service isolation, scalability, velocity and independence. But the REST API itself is not type safe; it doesn’t give you forward and backward compatibility and performance can be constrained.</p>
+<p>Protobufs let us define the same API in a standard way with an interface definition language (IDL), which resolves the issues that REST APIs aren’t addressing. Replace the REST API in services with gRPC and the backend works pretty much the same as before. That doesn’t totally solve the problem though (i.e. the web UI still cannot talk to backend services because browsers don’t directly support gRPC). You get around that by using the gRPC-Web library and a proxy. With those in place, web applications can now talk to a gRPC backend directly.</p>
+<p>Another alternative is to use an HTTP server pattern, where you implement some kind of an intermediate middleware that takes simple HTTP requests from the browser and converts them to gRPC. But that won’t scale because you need to keep updating the API, and it’s not maintainable when you have a lot of microservices and need to create these kinds of APIs for every single microservice. Use a proxy-based approach built around a service mesh framework and it will transcode your HTTP requests into gRPC requests so you can get rid of the HTTP server.</p>
+<p>In my talk, I showed a demo of a web app that uses gRPC-Web on the front end and a simple Go backend exposing a gRPC API. I didn’t configure a proxy directly but instead deployed the application on Istio, which configured the proxy and the gRPC-Web filter automatically. Crucially, the front and backend are now talking seamlessly, and you also gain a whole set of features from Istio as well.</p>
+<p>One of the most important of these is observability. You can now observe your microservices on the Grafana dashboard that shows key metrics like client and server request volumes, success rates, request durations and response rates. Then, because you are working with Istio, you can also trace all HTTP and gRPC requests in a much more standard manner using Jaeger. Apart from these, Kiali lets you visualize your deployment as a service graph which it generates by observing the traffic flow in real-time.</p>
+<p>The bottom line here is that by switching over to a gRPC-Web and Istio paradigm, developing a cloud native application becomes a relatively seamless experience.</p>
+<p>People seemed interested in the approach I was outlining and were curious to know how it might work in production. The demo is the result of very recent research, so it’s all I had at the moment – but if you would like to give it a go in production and let us know how it works, please go ahead! You can find the <a href="https://github.com/maxnilz/grpc-istio-demo" target="_blank" rel="noopener">demo on GitHub</a>. Feel free to check out the code and deploy the demo on Istio to see how it performs.</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/05/13/c10K-c100K/"/>
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="maxnilz"/>
+      <meta itemprop="description" content=""/>
+      <meta itemprop="image" content="/images/avatar.PNG"/>
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="maxnilz"/>
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/2019/05/13/c10K-c100K/" class="post-title-link" itemprop="url">c10K-c1M-c10M</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-05-13 07:31:43 / 修改时间：08:30:58" itemprop="dateCreated datePublished" datetime="2019-05-13T07:31:43+08:00">2019-05-13</time>
             
 
             
@@ -1621,159 +1771,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/02/19/grpc-web/"/>
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="maxnilz"/>
-      <meta itemprop="description" content=""/>
-      <meta itemprop="image" content="/images/avatar.PNG"/>
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="maxnilz"/>
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/2019/02/19/grpc-web/" class="post-title-link" itemprop="url">grpc-web</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-
-              
-                
-              
-
-              <time title="创建时间：2019-02-19 10:26:46" itemprop="dateCreated datePublished" datetime="2019-02-19T10:26:46+08:00">2019-02-19</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">更新于</span>
-                
-                <time title="修改时间：2019-04-05 10:01:28" itemprop="dateModified" datetime="2019-04-05T10:01:28+08:00">2019-04-05</time>
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1825,7 +1822,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">31</span>
+                    <span class="site-state-item-count">32</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -1891,7 +1888,17 @@
                     
                       
                     
-                    <span class="site-state-item-count">12</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">17</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
