@@ -108,7 +108,7 @@
 <meta property="og:site_name" content="maxnilz">
 <meta property="og:description" content="This is a post which was about how web applications can benefit from gRPC by leveraging a gRPC sub-project called gRPC-Web along with Istio. gRPC-Web addresses a shortcoming in the core gRPC framework">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-06-10T14:58:10.367Z">
+<meta property="og:updated_time" content="2019-07-22T01:59:17.386Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="implementing-grpc-web-istio-envoy">
 <meta name="twitter:description" content="This is a post which was about how web applications can benefit from gRPC by leveraging a gRPC sub-project called gRPC-Web along with Istio. gRPC-Web addresses a shortcoming in the core gRPC framework">
@@ -370,12 +370,24 @@
                 
               
 
-              <time title="创建时间：2019-06-10 22:51:55 / 修改时间：22:58:10" itemprop="dateCreated datePublished" datetime="2019-06-10T22:51:55+08:00">2019-06-10</time>
+              <time title="创建时间：2019-06-10 22:51:55" itemprop="dateCreated datePublished" datetime="2019-06-10T22:51:55+08:00">2019-06-10</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-07-22 09:59:17" itemprop="dateModified" datetime="2019-07-22T09:59:17+08:00">2019-07-22</time>
               
             
           </span>
@@ -416,7 +428,7 @@
 <p>In my talk, I showed a demo of a web app that uses gRPC-Web on the front end and a simple Go backend exposing a gRPC API. I didn’t configure a proxy directly but instead deployed the application on Istio, which configured the proxy and the gRPC-Web filter automatically. Crucially, the front and backend are now talking seamlessly, and you also gain a whole set of features from Istio as well.</p>
 <p>One of the most important of these is observability. You can now observe your microservices on the Grafana dashboard that shows key metrics like client and server request volumes, success rates, request durations and response rates. Then, because you are working with Istio, you can also trace all HTTP and gRPC requests in a much more standard manner using Jaeger. Apart from these, Kiali lets you visualize your deployment as a service graph which it generates by observing the traffic flow in real-time.</p>
 <p>The bottom line here is that by switching over to a gRPC-Web and Istio paradigm, developing a cloud native application becomes a relatively seamless experience.</p>
-<p>People seemed interested in the approach I was outlining and were curious to know how it might work in production. The demo is the result of very recent research, so it’s all I had at the moment – but if you would like to give it a go in production and let us know how it works, please go ahead! You can find the <a href="https://github.com/maxnilz/grpc-istio-demo" target="_blank" rel="noopener">demo on GitHub</a>. Feel free to check out the code and deploy the demo on Istio to see how it performs.</p>
+<p>You can find <a href="https://github.com/maxnilz/grpc-istio-demo" target="_blank" rel="noopener">a demo on GitHub</a> for this. Feel free to check out the code and deploy the demo on Istio to see how it performs.</p>
 
       
     </div>
