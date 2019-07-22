@@ -1145,210 +1145,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/06/10/cloud-native-apps-with-grpc-and-istio/"/>
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="maxnilz"/>
-      <meta itemprop="description" content=""/>
-      <meta itemprop="image" content="/images/avatar.PNG"/>
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="maxnilz"/>
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/2019/06/10/cloud-native-apps-with-grpc-and-istio/" class="post-title-link" itemprop="url">cloud-native-apps-with-grpc-and-istio</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-
-              
-                
-              
-
-              <time title="创建时间：2019-06-10 23:13:45 / 修改时间：23:45:20" itemprop="dateCreated datePublished" datetime="2019-06-10T23:13:45+08:00">2019-06-10</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>A simple web application that replaces keywords in user-entered text with emojis by communicating with a gRPC backend via gRPC-Web and Istio.<br>A simple hello world application that exposed a <code>/api/say</code> API gRPC backend via gRPC-json-transcoder and Istio.</p>
-<p>Below is an outline of the steps we’ll follow to create the emoji application.</p>
-<ol>
-<li>Define the protocol format using Protobuf</li>
-<li>Compile the Protobuf definition to generate Go and JavaScript files</li>
-<li>Build and test a Go based gRPC service that replaces keywords in input text with emojis</li>
-<li>Create a web interface for the emoji service using gRPC-Web</li>
-<li>Configure the EnvoyFilter and deploy the backend over Istio</li>
-<li>Deploy the web application and test our emoji service</li>
-</ol>
-<h2 id="The-Architecture"><a href="#The-Architecture" class="headerlink" title="The Architecture"></a>The Architecture</h2><p>Let’s dive a little deeper to understand what the final architecture for the emoji service will look like.</p>
-
-<p>Simply put, the web application will leverage the gRPC-Web library to send HTTP requests to the Istio Gatway whenever the user supplies some text. The Istio Gateway will then route the HTTP request to the Proxy sidecar running alongside the emoji service backend, which will then translate the HTTP call to a gRPC call using Envoy’s gRPC-Web filter.</p>
-<h2 id="Defining-The-Protocol-Format"><a href="#Defining-The-Protocol-Format" class="headerlink" title="Defining The Protocol Format"></a>Defining The Protocol Format</h2><p>First, let’s define the protocol format using Protobuf.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">syntax = &quot;proto3&quot;;</span><br><span class="line"></span><br><span class="line">package emoji;</span><br><span class="line"></span><br><span class="line">service EmojiService &#123;</span><br><span class="line">  rpc Emojize (EmojizeRequest) returns (EmojizeReply);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">message EmojizeRequest &#123;</span><br><span class="line">  string text = 1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">message EmojizeReply &#123;</span><br><span class="line">  string emojized_text = 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>We define a simple service named EmojiService that understands a rpc call named Emojize which accepts an EmojizeRequest object and returns an instance of EmojizeReply.</p>
-<p>The message named EmojizeRequest holds a string field named text to represent user-entered text. Also, EmojizeReply holds a string named emojized_text to represent the final output string wherein the server will have replaced known emoji keywords with an actual emoji character.</p>
-<h2 id="Compiling-The-Protobuf-Definition"><a href="#Compiling-The-Protobuf-Definition" class="headerlink" title="Compiling The Protobuf Definition"></a>Compiling The Protobuf Definition</h2><p>Let’s first create the project directory structure like grpc-web-emoji/emoji/ and put the above definition in a file named emoji.proto.</p>
-<p>We can now compile the emoji.proto file and generate the necessary Go files.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ protoc -I emoji/ emoji/emoji.proto --go_out=plugins=grpc:emoji</span><br></pre></td></tr></table></figure>
-<p>Similarly, we also generate the JavaScript files.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ protoc -I emoji/ emoji/emoji.proto --js_out=import_style=commonjs:emoji \</span><br><span class="line">         --grpc-web_out=import_style=commonjs,mode=grpcwebtext:emoji</span><br></pre></td></tr></table></figure>
-<p>At this point, you should land up with a directory structure like below.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">── grpc-web-emoji</span><br><span class="line">   └── emoji</span><br><span class="line">       ├── emoji.pb.go</span><br><span class="line">       ├── emoji.proto</span><br><span class="line">       ├── emoji_grpc_web_pb.js</span><br><span class="line">       └── emoji_pb.js</span><br></pre></td></tr></table></figure>
-<h2 id="Building-And-Testing-The-Go-Backend"><a href="#Building-And-Testing-The-Go-Backend" class="headerlink" title="Building And Testing The Go Backend"></a>Building And Testing The Go Backend</h2><p>Let’s now create a go program that implements the EmojiService API. To do so, we create a file named main.go with the following contents.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;context&quot;</span><br><span class="line">	&quot;log&quot;</span><br><span class="line">	&quot;net&quot;</span><br><span class="line"></span><br><span class="line">	proto &quot;github.com/venilnoronha/grpc-web-emoji/emoji&quot;</span><br><span class="line">	&quot;google.golang.org/grpc&quot;</span><br><span class="line">	&quot;google.golang.org/grpc/reflection&quot;</span><br><span class="line">	emoji &quot;gopkg.in/kyokomi/emoji.v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">// server is used to implement the EmojiService interface</span><br><span class="line">type server struct&#123;&#125;</span><br><span class="line"></span><br><span class="line">// Emojize takes a input string via EmojizeRequest, replaces known keywords with</span><br><span class="line">// actual emoji characters and returns it via a EmojizeReply instance.</span><br><span class="line">func (s *server) Emojize(c context.Context, r *proto.EmojizeRequest)</span><br><span class="line">			(*proto.EmojizeReply, error) &#123;</span><br><span class="line">	return &amp;proto.EmojizeReply&#123;EmojizedText: emoji.Sprint(r.Text)&#125;, nil</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	// listen to TCP requests over port 9000</span><br><span class="line">	lis, err := net.Listen(&quot;tcp&quot;, &quot;:9000&quot;)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Fatalf(&quot;failed to listen: %v&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">	log.Printf(&quot;listening on %s&quot;, lis.Addr())</span><br><span class="line"></span><br><span class="line">	// register the EmojiService implementation with the gRPC server</span><br><span class="line">	s := grpc.NewServer()</span><br><span class="line">	proto.RegisterEmojiServiceServer(s, &amp;server&#123;&#125;)</span><br><span class="line">	reflection.Register(s)</span><br><span class="line">	if err := s.Serve(lis); err != nil &#123;</span><br><span class="line">		log.Fatalf(&quot;failed to serve: %v&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>I’ve used the kyokomi/emoji library to do the heavy lifting i.e. converting keywords from input text into emojis.</p>
-<p>Let’s start the server, like so:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ go run -v main.go</span><br><span class="line">2019/06/10 10:45:12 listening on [::]:9000</span><br></pre></td></tr></table></figure>
-<p>It’s now time to test the emoji service programmatically. We’ll do so by creating a new client implementation named emoji_client.go with the following contents.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;log&quot;</span><br><span class="line">	&quot;time&quot;</span><br><span class="line"></span><br><span class="line">	proto &quot;github.com/venilnoronha/grpc-web-emoji/emoji&quot;</span><br><span class="line">	&quot;golang.org/x/net/context&quot;</span><br><span class="line">	&quot;google.golang.org/grpc&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	// connect to the server</span><br><span class="line">	conn, err := grpc.Dial(&quot;localhost:9000&quot;, grpc.WithInsecure())</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Fatalf(&quot;could not connect to the service: %v&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">	defer conn.Close()</span><br><span class="line"></span><br><span class="line">	// send a request to the server</span><br><span class="line">	ctx, cancel := context.WithTimeout(context.Background(), time.Second)</span><br><span class="line">	defer cancel()</span><br><span class="line"></span><br><span class="line">	c := proto.NewEmojiServiceClient(conn)</span><br><span class="line">	resp, err := c.Emojize(ctx, &amp;proto.EmojizeRequest&#123;</span><br><span class="line">		Text: &quot;I like :pizza: and :sushi:!&quot;,</span><br><span class="line">	&#125;)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Fatalf(&quot;could not call service: %v&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">	log.Printf(&quot;server says: %s&quot;, resp.GetEmojizedText())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>We can now run the emoji service client as shown below.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ go run emoji_client.go</span><br><span class="line">2019/06/10 10:55:52 server says: I like 🍕  and 🍣 !</span><br></pre></td></tr></table></figure>
-<p>Voila! The gRPC emoji service works as expected, and it’s now time to get the web frontend up and running.</p>
-<h2 id="Creating-The-Web-Interface-Using-gRPC-Web"><a href="#Creating-The-Web-Interface-Using-gRPC-Web" class="headerlink" title="Creating The Web Interface Using gRPC-Web"></a>Creating The Web Interface Using gRPC-Web</h2><p>First, let’s create a HTML page named index.html. The page displays a text editor to the user and calls a emojize function (which we’ll define later) to send the user-input to the backend emoji service. The emojize function will also consume the gRPC response from the backend service and update the user input field with the data given out by the server.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">  &lt;div id=&quot;editor&quot; contentEditable=&quot;true&quot; hidefocus=&quot;true&quot; onkeyup=&quot;emojize()&quot;&gt;&lt;/div&gt;</span><br><span class="line">  &lt;script src=&quot;dist/main.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-<p>Let’s put the JavaScript code for the web frontend in a file named client.js as shown below.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">const &#123;EmojizeRequest, EmojizeReply&#125; = require(&apos;emoji/emoji_pb.js&apos;);</span><br><span class="line">const &#123;EmojiServiceClient&#125; = require(&apos;emoji/emoji_grpc_web_pb.js&apos;);</span><br><span class="line"></span><br><span class="line">var client = new EmojiServiceClient(&apos;http://192.168.99.100:31380&apos;);</span><br><span class="line">var editor = document.getElementById(&apos;editor&apos;);</span><br><span class="line"></span><br><span class="line">window.emojize = function() &#123;</span><br><span class="line">  var request = new EmojizeRequest();</span><br><span class="line">  request.setText(editor.innerText);</span><br><span class="line"></span><br><span class="line">  client.emojize(request, &#123;&#125;, (err, response) =&gt; &#123;</span><br><span class="line">    editor.innerText = response.getEmojizedText();</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Notice that the EmojiServiceClient connects with the backend emoji service at <a href="http://192.168.99.100:31380" target="_blank" rel="noopener">http://192.168.99.100:31380</a> and not <a href="http://localhost:9000" target="_blank" rel="noopener">http://localhost:9000</a>. This is because the web application can’t directly speak with a gRPC backend, and, therefore, we’ll be deploying our backend emoji service over Istio. The Istio deployment will be running on Minikube with the IP address of 192.168.99.100 and the default Istio Ingress port exposed for HTTP is 31380.</p>
-<p>We’ll now need a couple of libraries to generate the final dist/main.js which we reference in index.html. To do so, we use the following npm package.json configuration.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;name&quot;: &quot;grpc-web-emoji&quot;,</span><br><span class="line">  &quot;version&quot;: &quot;0.1.0&quot;,</span><br><span class="line">  &quot;description&quot;: &quot;gRPC-Web Emoji Sample&quot;,</span><br><span class="line">  &quot;devDependencies&quot;: &#123;</span><br><span class="line">    &quot;@grpc/proto-loader&quot;: &quot;^0.3.0&quot;,</span><br><span class="line">    &quot;google-protobuf&quot;: &quot;^3.6.1&quot;,</span><br><span class="line">    &quot;grpc&quot;: &quot;^1.15.0&quot;,</span><br><span class="line">    &quot;grpc-web&quot;: &quot;^1.0.0&quot;,</span><br><span class="line">    &quot;webpack&quot;: &quot;^4.16.5&quot;,</span><br><span class="line">    &quot;webpack-cli&quot;: &quot;^3.1.0&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>At this point, we can install the libraries and generate dist/main.js using the following commands.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ npm install</span><br><span class="line">$ npx webpack client.js</span><br></pre></td></tr></table></figure>
-<h2 id="Deploying-The-Backend-Over-Istio"><a href="#Deploying-The-Backend-Over-Istio" class="headerlink" title="Deploying The Backend Over Istio"></a>Deploying The Backend Over Istio</h2><p>We can now package the backend emoji service into a container and deploy it over Istio. We’d need to install the gRPC-Web EnvoyFilter here so that calls to the backend gRPC service can be translated to/from gRPC and HTTP.</p>
-<p>Let’s start off by building the Docker image with the following Dockerfile.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">FROM golang:1.12 as builder</span><br><span class="line"></span><br><span class="line">WORKDIR /root/go/src/github.com/maxnilz/grpc-istio-demo/</span><br><span class="line">COPY ./ .</span><br><span class="line">RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -v -o bin/server ./cmd/server.go</span><br><span class="line"></span><br><span class="line">FROM scratch</span><br><span class="line">WORKDIR /bin/</span><br><span class="line">COPY --from=builder /root/go/src/github.com/maxnilz/grpc-istio-demo/bin/server .</span><br><span class="line">ENTRYPOINT [ &quot;/bin/server&quot; ]</span><br><span class="line">EXPOSE 9000</span><br></pre></td></tr></table></figure>
-<p>We can build and push the image to Docker Hub like so:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ docker build --build-arg http_proxy=$(http_proxy) --build-arg https_proxy=$(http_proxy) --build-arg no_proxy=$(no_proxy) -f docker/server.Dockerfile -t maxnilz/grpc-istio-demo:server .</span><br><span class="line">$ docker push maxnilz/grpc-istio-demo:server</span><br></pre></td></tr></table></figure>
-<p>Next, we define the Kubernetes Service and Deployment configuration as shown below. Let’s call this server.yaml.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: server</span><br><span class="line">  labels:</span><br><span class="line">    app: server</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">  - name: grpc-web</span><br><span class="line">    port: 9000</span><br><span class="line">  selector:</span><br><span class="line">    app: server</span><br><span class="line">---</span><br><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: server</span><br><span class="line">        version: v1</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: server</span><br><span class="line">        image: maxnilz/grpc-istio-demo:server</span><br><span class="line">        imagePullPolicy: Always</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 9000</span><br></pre></td></tr></table></figure>
-<p>Note that once we deploy this service over Istio, the grpc- prefix in the Service port name will allow Istio to recognize this as a gRPC service.</p>
-<p>Next, we need to define an Istio Gateway to route HTTP traffic over to the backend service. To do so, we write the following configuration to a file named gateway.yaml.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: networking.istio.io/v1alpha3</span><br><span class="line">kind: Gateway</span><br><span class="line">metadata:</span><br><span class="line">  name: gateway</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    istio: ingressgateway</span><br><span class="line">  servers:</span><br><span class="line">  - port:</span><br><span class="line">      number: 80</span><br><span class="line">      name: http</span><br><span class="line">      protocol: HTTP</span><br><span class="line">    hosts:</span><br><span class="line">    - &quot;*&quot;</span><br><span class="line">  - port:</span><br><span class="line">      number: 31400</span><br><span class="line">      name: grpc</span><br><span class="line">      protocol: HTTP</span><br><span class="line">    hosts:</span><br><span class="line">      - &quot;*&quot;</span><br><span class="line">---</span><br><span class="line">apiVersion: networking.istio.io/v1alpha3</span><br><span class="line">kind: VirtualService</span><br><span class="line">metadata:</span><br><span class="line">  name: virtual-service</span><br><span class="line">spec:</span><br><span class="line">  hosts:</span><br><span class="line">    - &quot;*&quot;</span><br><span class="line">  gateways:</span><br><span class="line">  - gateway</span><br><span class="line">  http:</span><br><span class="line">  - match:</span><br><span class="line">    - uri:</span><br><span class="line">        prefix: /proto.EmojiService</span><br><span class="line">    route:</span><br><span class="line">    - destination:</span><br><span class="line">        host: server</span><br><span class="line">    corsPolicy:</span><br><span class="line">      allowOrigin:</span><br><span class="line">        - &quot;*&quot;</span><br><span class="line">      allowMethods:</span><br><span class="line">        - POST</span><br><span class="line">        - GET</span><br><span class="line">        - OPTIONS</span><br><span class="line">        - PUT</span><br><span class="line">        - DELETE</span><br><span class="line">      allowHeaders:</span><br><span class="line">        - grpc-timeout</span><br><span class="line">        - content-type</span><br><span class="line">        - keep-alive</span><br><span class="line">        - user-agent</span><br><span class="line">        - cache-control</span><br><span class="line">        - content-type</span><br><span class="line">        - content-transfer-encoding</span><br><span class="line">        - custom-header-1</span><br><span class="line">        - x-accept-content-transfer-encoding</span><br><span class="line">        - x-accept-response-streaming</span><br><span class="line">        - x-user-agent</span><br><span class="line">        - x-grpc-web</span><br><span class="line">      maxAge: 1728s</span><br><span class="line">      exposeHeaders:</span><br><span class="line">        - custom-header-1</span><br><span class="line">        - grpc-status</span><br><span class="line">        - grpc-message</span><br><span class="line">      allowCredentials: true</span><br><span class="line">  - match:</span><br><span class="line">    - uri:</span><br><span class="line">        prefix: /api</span><br><span class="line">    route:</span><br><span class="line">      - destination:</span><br><span class="line">          host: server</span><br><span class="line">  - match:</span><br><span class="line">    - port: 31400</span><br><span class="line">    route:</span><br><span class="line">    - destination:</span><br><span class="line">        host: server</span><br><span class="line">        port:</span><br><span class="line">          number: 9000</span><br><span class="line">  - route:</span><br><span class="line">    - destination:</span><br><span class="line">        host: web-ui</span><br></pre></td></tr></table></figure>
-<p>Notice that we’ve defined a complex corsPolicy here, and it’s required for gRPC-Web to work correctly.</p>
-<p>Next, we define the Kubernetes Service and Deployment configuration as shown below. Let’s call this web-ui.yaml.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: web-ui</span><br><span class="line">  labels:</span><br><span class="line">    app: web-ui</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">  - name: http</span><br><span class="line">    port: 9001</span><br><span class="line">  selector:</span><br><span class="line">    app: web-ui</span><br><span class="line">---</span><br><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: web-ui</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: web-ui</span><br><span class="line">        version: v1</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: web-ui</span><br><span class="line">        image: maxnilz/grpc-istio-demo:web-ui</span><br><span class="line">        imagePullPolicy: Always</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 9001</span><br></pre></td></tr></table></figure></p>
-<p>We can now simply deploy the above configurations in the following order.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f &lt;(istioctl kube-inject -f istio/server.yaml)</span><br><span class="line">$ kubectl apply -f &lt;(istioctl kube-inject -f istio/web-ui.yaml)</span><br><span class="line">$ kubectl apply -f istio/gateway.yaml</span><br></pre></td></tr></table></figure></p>
-<h2 id="Deploying-And-Testing-The-Web-Frontend"><a href="#Deploying-And-Testing-The-Web-Frontend" class="headerlink" title="Deploying And Testing The Web Frontend"></a>Deploying And Testing The Web Frontend</h2><p>We’ve now reached the final stage of the experiment. Let’s head over to <a href="http://192.168.99.100:31380" target="_blank" rel="noopener">http://192.168.99.100:31380</a> to play with the emoji web interface.</p>
-<p>If everything went well, you should have a fully functional gRPC-Web based web application, as shown below.<br><img src="/2019/06/10/cloud-native-apps-with-grpc-and-istio/demo.gif" title="demo.gif"></p>
-<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>gRPC-Web provides a great way of bringing the benefits of gRPC services over to web applications. It currently needs a middle agent like the Istio Data Plane (i.e. Envoy Proxy) in order to translate data to/from HTTP and gRPC formats. However, once we have the infrastructure ready, building web applications can become a seamless experience for developers when working with gRPC.</p>
-<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ul>
-<li>The gRPC-Web <a href="https://github.com/grpc/grpc-web/tree/master/net/grpc/gateway/examples/helloworld" target="_blank" rel="noopener">Hello World Guide</a></li>
-<li>The WebpageFx <a href="https://www.webpagefx.com/tools/emoji-cheat-sheet/" target="_blank" rel="noopener">Emoji Cheat Sheet</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/06/10/implementing-grpc-web-istio-envoy/"/>
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1793,6 +1589,147 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://maxnilz.github.io/2019/05/07/protobuf-based-database/"/>
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="maxnilz"/>
+      <meta itemprop="description" content=""/>
+      <meta itemprop="image" content="/images/avatar.PNG"/>
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="maxnilz"/>
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/2019/05/07/protobuf-based-database/" class="post-title-link" itemprop="url">protobuf-based-database</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-05-07 21:33:41 / 修改时间：21:34:07" itemprop="dateCreated datePublished" datetime="2019-05-07T21:33:41+08:00">2019-05-07</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -1844,7 +1781,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">38</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
